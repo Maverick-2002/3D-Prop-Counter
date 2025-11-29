@@ -1,56 +1,56 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class Draggable : MonoBehaviour
 {
     private Camera cam;
     private Rigidbody rb;
     private bool dragging = false;
-    private float yLevel;
+    private float fixedX;
+    private Vector3 offset;
 
-    private void Start()
+    void Start()
     {
         cam = Camera.main;
         rb = GetComponent<Rigidbody>();
-        yLevel = transform.position.y;
+        fixedX = transform.position.x;
     }
-
     void Update()
     {
-        HandleMouse();
-    }
-
-    void HandleMouse()
-    {
         if (Input.GetMouseButtonDown(0))
-        {
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-
-            if (Physics.Raycast(ray, out RaycastHit hit))
-            {
-                if (hit.collider.gameObject == this.gameObject)
-                {
-                    dragging = true;
-                    rb.isKinematic = true;
-                }
-            }
-        }
+            BeginDrag();
 
         if (Input.GetMouseButton(0) && dragging)
-        {
-            Plane plane = new Plane(Vector3.up, new Vector3(0, yLevel, 0));
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-
-            if (plane.Raycast(ray, out float dist))
-            {
-                Vector3 pos = ray.GetPoint(dist);
-                transform.position = pos;
-            }
-        }
+            Drag();
 
         if (Input.GetMouseButtonUp(0))
+            EndDrag();
+    }
+    void BeginDrag()
+    {
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+
+        if (Physics.Raycast(ray, out RaycastHit hit) && hit.collider.gameObject == gameObject)
         {
-            dragging = false;
-            rb.isKinematic = false;
+            dragging = true;
+            rb.isKinematic = true;
+            offset = transform.position - GetMouseWorldPosition();
         }
+    }
+    void Drag()
+    {
+        Vector3 target = GetMouseWorldPosition() + offset;
+        target.x = fixedX;
+        transform.position = target;
+    }
+    void EndDrag()
+    {
+        dragging = false;
+        rb.isKinematic = false;
+    }
+    Vector3 GetMouseWorldPosition()
+    {
+        Vector3 mouse = Input.mousePosition;
+        mouse.z = cam.WorldToScreenPoint(transform.position).z;
+        return cam.ScreenToWorldPoint(mouse);
     }
 }
